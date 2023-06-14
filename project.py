@@ -29,9 +29,34 @@ def write_xml(root, file_path):
     tree = ET.ElementTree(root)
     tree.write(file_path)
 
+import json
+import xmltodict
+import yaml
+
 def convert_file(input_file, output_file, output_format):
-    # Zastąp tę funkcję odpowiednim kodem do konwersji plików.
-    print(f"Konwertowanie {input_file} do {output_file} w formacie {output_format}...")
+    # Wczytywanie pliku wejściowego
+    with open(input_file, 'r') as file:
+        if input_file.endswith('.json'):
+            data = json.load(file)
+        elif input_file.endswith('.xml'):
+            data = xmltodict.parse(file.read())
+        elif input_file.endswith('.yml') or input_file.endswith('.yaml'):
+            data = yaml.safe_load(file)
+        else:
+            print('Niewspierany format pliku wejściowego.')
+            return
+
+    # Konwersja i zapis do pliku wyjściowego
+    with open(output_file, 'w') as file:
+        if output_format == 'json':
+            json.dump(data, file, indent=4)
+        elif output_format == 'xml':
+            xmltodict.unparse(data, output=file)
+        elif output_format == 'yml':
+            yaml.dump(data, file)
+        else:
+            print('Niewspierany format pliku wyjściowego.')
+
 
 class ConverterApp(QWidget):
     def __init__(self):
