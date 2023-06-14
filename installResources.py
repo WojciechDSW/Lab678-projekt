@@ -1,5 +1,5 @@
-#!/usr/bin/env python3
-
-import os
-
-os.system('pip install pyyaml')
+pip install PyQt5
+pip install argparse
+pip install pyyaml
+pip install elementpath
+pip install xmltodict
