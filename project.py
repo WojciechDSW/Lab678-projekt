@@ -29,34 +29,28 @@ def write_xml(root, file_path):
     tree = ET.ElementTree(root)
     tree.write(file_path)
 
-import json
-import xmltodict
-import yaml
-
 def convert_file(input_file, output_file, output_format):
-    # Wczytywanie pliku wejściowego
-    with open(input_file, 'r') as file:
-        if input_file.endswith('.json'):
-            data = json.load(file)
-        elif input_file.endswith('.xml'):
-            data = xmltodict.parse(file.read())
-        elif input_file.endswith('.yml') or input_file.endswith('.yaml'):
-            data = yaml.safe_load(file)
-        else:
-            print('Niewspierany format pliku wejściowego.')
-            return
+    # Określenie formatu pliku wejściowego
+    if input_file.endswith('.json'):
+        data = read_json(input_file)
+    elif input_file.endswith('.yaml') or input_file.endswith('.yml'):
+        data = read_yaml(input_file)
+    elif input_file.endswith('.xml'):
+        data = read_xml(input_file)
+    else:
+        print('Nieobsługiwany format pliku wejściowego.')
+        return
 
-    # Konwersja i zapis do pliku wyjściowego
-    with open(output_file, 'w') as file:
-        if output_format == 'json':
-            json.dump(data, file, indent=4)
-        elif output_format == 'xml':
-            xmltodict.unparse(data, output=file)
-        elif output_format == 'yml':
-            yaml.dump(data, file)
-        else:
-            print('Niewspierany format pliku wyjściowego.')
-
+    # Określenie formatu pliku wyjściowego
+    if output_format == 'json':
+        write_json(data, output_file)
+    elif output_format == 'yaml':
+        write_yaml(data, output_file)
+    elif output_format == 'xml':
+        write_xml(data, output_file)
+    else:
+        print('Nieobsługiwany format pliku wyjściowego.')
+        return
 
 class ConverterApp(QWidget):
     def __init__(self):
@@ -103,7 +97,7 @@ class ConverterApp(QWidget):
 
     def choose_output_file(self):
         options = QFileDialog.Options()
-        fileName, _ = QFileDialog.getSaveFileName(self, "Wybierz plik wyjściowy", "", "All Files (*)", options=options)
+        fileName, _ = QFileDialog.getSaveFileName(self, "Wybierz lokalizacje pliku", "", "All Files (*)", options=options)
         if fileName:
             self.outputFileLineEdit.setText(fileName)
 
