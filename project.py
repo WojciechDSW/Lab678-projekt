@@ -3,7 +3,10 @@ import threading
 import json
 import xml.etree.ElementTree as ET
 import yaml
+import xmljson
+import xmltodict
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QFileDialog, QComboBox, QLabel, QLineEdit
+
 
 def read_json(file_path):
     with open(file_path, 'r') as f:
@@ -22,12 +25,12 @@ def write_yaml(data, file_path):
         yaml.safe_dump(data, f)
 
 def read_xml(file_path):
-    tree = ET.parse(file_path)
-    return tree.getroot()
+    with open(file_path, 'r') as f:
+        return xmltodict.parse(f.read())
 
-def write_xml(root, file_path):
-    tree = ET.ElementTree(root)
-    tree.write(file_path)
+def write_xml(data, file_path):
+    with open(file_path, 'w') as f:
+        f.write(xmltodict.unparse(data))
 
 def convert_file(input_file, output_file, output_format):
     # Określenie formatu pliku wejściowego
@@ -52,6 +55,8 @@ def convert_file(input_file, output_file, output_format):
         print('Nieobsługiwany format pliku wyjściowego.')
         return
 
+
+
 class ConverterApp(QWidget):
     def __init__(self):
         super().__init__()
@@ -71,7 +76,7 @@ class ConverterApp(QWidget):
 
         self.outputFileLabel = QLabel('Plik wyjściowy:')
         self.outputFileLineEdit = QLineEdit()
-        self.outputFileButton = QPushButton('Wybierz plik wyjściowy')
+        self.outputFileButton = QPushButton('Wybierz ścieżkę docelową pliku')
         self.outputFileButton.clicked.connect(self.choose_output_file)
 
         self.convertButton = QPushButton('Konwertuj')
@@ -112,3 +117,4 @@ if __name__ == "__main__":
     converter = ConverterApp()
     converter.show()
     sys.exit(app.exec_())
+
