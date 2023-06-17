@@ -1,120 +1,102 @@
-import sys
-import threading
 import json
-import xml.etree.ElementTree as ET
 import yaml
-import xmljson
 import xmltodict
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QFileDialog, QComboBox, QLabel, QLineEdit
+import tkinter as tk
+from tkinter import filedialog, messagebox
 
+def load_file(file_name):
+    with open(file_name, 'r') as file:
+        return file.read()
 
-def read_json(file_path):
-    with open(file_path, 'r') as f:
-        return json.load(f)
+def save_file(file_name, content):
+    with open(file_name, 'w') as file:
+        file.write(content)
 
-def write_json(data, file_path):
-    with open(file_path, 'w') as f:
-        json.dump(data, f)
+def convert_yaml_to_json(yaml_content):
+    data = yaml.safe_load(yaml_content)
+    return json.dumps(data, indent=4)
 
-def read_yaml(file_path):
-    with open(file_path, 'r') as f:
-        return yaml.safe_load(f)
+def convert_yaml_to_xml(yaml_content):
+    data = yaml.safe_load(yaml_content)
+    return xmltodict.unparse(data, pretty=True)
 
-def write_yaml(data, file_path):
-    with open(file_path, 'w') as f:
-        yaml.safe_dump(data, f)
+def convert_json_to_yaml(json_content):
+    data = json.loads(json_content)
+    return yaml.dump(data)
 
-def read_xml(file_path):
-    with open(file_path, 'r') as f:
-        return xmltodict.parse(f.read())
+def convert_json_to_xml(json_content):
+    data = json.loads(json_content)
+    return xmltodict.unparse(data, pretty=True)
 
-def write_xml(data, file_path):
-    with open(file_path, 'w') as f:
-        f.write(xmltodict.unparse(data))
+def convert_xml_to_yaml(xml_content):
+    data = xmltodict.parse(xml_content)
+    return yaml.dump(data)
 
-def convert_file(input_file, output_file, output_format):
-    # Określenie formatu pliku wejściowego
-    if input_file.endswith('.json'):
-        data = read_json(input_file)
-    elif input_file.endswith('.yaml') or input_file.endswith('.yml'):
-        data = read_yaml(input_file)
-    elif input_file.endswith('.xml'):
-        data = read_xml(input_file)
-    else:
-        print('Nieobsługiwany format pliku wejściowego.')
+def convert_xml_to_json(xml_content):
+    data = xmltodict.parse(xml_content)
+    return json.dumps(data, indent=4)
+
+def convert_files():
+    input_file = filedialog.askopenfilename(title="Wybierz plik wejściowy")
+    output_file = filedialog.asksaveasfilename(title="Zapisz plik wyjściowy", defaultextension=".txt")
+
+    input_format = input_format_var.get()
+    output_format = output_format_var.get()
+
+    if not input_file or not output_file:
+        messagebox.showerror("Błąd", "Należy wybrać plik wejściowy i plik wyjściowy.")
         return
 
-    # Określenie formatu pliku wyjściowego
-    if output_format == 'json':
-        write_json(data, output_file)
-    elif output_format == 'yaml':
-        write_yaml(data, output_file)
-    elif output_format == 'xml':
-        write_xml(data, output_file)
-    else:
-        print('Nieobsługiwany format pliku wyjściowego.')
-        return
+    input_content = load_file(input_file)
 
+    if input_format == "YAML":
+        if output_format == "JSON":
+            output_content = convert_yaml_to_json(input_content)
+        elif output_format == "XML":
+            output_content = convert_yaml_to_xml(input_content)
+    elif input_format == "JSON":
+        if output_format == "YAML":
+            output_content = convert_json_to_yaml(input_content)
+        elif output_format == "XML":
+            output_content = convert_json_to_xml(input_content)
+    elif input_format == "XML":
+        if output_format == "YAML":
+            output_content = convert_xml_to_yaml(input_content)
+        elif output_format == "JSON":
+            output_content = convert_xml_to_json(input_content)
 
+    save_file(output_file, output_content)
+    messagebox.showinfo("Konwersja zakończona", "Plik zapisany jako " + output_file)
 
-class ConverterApp(QWidget):
-    def __init__(self):
-        super().__init__()
-        self.initUI()
+# Tworzenie głównego okna
+window = tk.Tk()
+window.title("Konwerter plików YAML, JSON, XML")
 
-    def initUI(self):
-        layout = QVBoxLayout()
+# Tworzenie etykiet
+input_label = tk.Label(window, text="Format pliku wejściowego:")
+input_label.grid(row=0, column=0, padx=10, pady=10)
 
-        self.inputFileLabel = QLabel('Plik wejściowy:')
-        self.inputFileLineEdit = QLineEdit()
-        self.inputFileButton = QPushButton('Wybierz plik wejściowy')
-        self.inputFileButton.clicked.connect(self.choose_input_file)
+output_label = tk.Label(window, text="Format pliku wyjściowego:")
+output_label.grid(row=1, column=0, padx=10, pady=10)
 
-        self.outputFormatLabel = QLabel('Format wyjściowy:')
-        self.outputFormatComboBox = QComboBox()
-        self.outputFormatComboBox.addItems(['json', 'yaml', 'xml'])
+# Tworzenie list rozwijanych dla formatu wejściowego
+input_format_var = tk.StringVar()
+input_format_var.set("YAML")
 
-        self.outputFileLabel = QLabel('Plik wyjściowy:')
-        self.outputFileLineEdit = QLineEdit()
-        self.outputFileButton = QPushButton('Wybierz ścieżkę docelową pliku')
-        self.outputFileButton.clicked.connect(self.choose_output_file)
+input_format_menu = tk.OptionMenu(window, input_format_var, "YAML", "JSON", "XML")
+input_format_menu.grid(row=0, column=1, padx=10, pady=10)
 
-        self.convertButton = QPushButton('Konwertuj')
-        self.convertButton.clicked.connect(self.convert)
+# Tworzenie listy rozwijanej dla formatu wyjściowego
+output_format_var = tk.StringVar()
+output_format_var.set("JSON")
 
-        layout.addWidget(self.inputFileLabel)
-        layout.addWidget(self.inputFileLineEdit)
-        layout.addWidget(self.inputFileButton)
-        layout.addWidget(self.outputFormatLabel)
-        layout.addWidget(self.outputFormatComboBox)
-        layout.addWidget(self.outputFileLabel)
-        layout.addWidget(self.outputFileLineEdit)
-        layout.addWidget(self.outputFileButton)
-        layout.addWidget(self.convertButton)
+output_format_menu = tk.OptionMenu(window, output_format_var, "YAML", "JSON", "XML")
+output_format_menu.grid(row=1, column=1, padx=10, pady=10)
 
-        self.setLayout(layout)
+# Tworzenie przycisku konwersji
+convert_button = tk.Button(window, text="Konwertuj", command=convert_files)
+convert_button.grid(row=2, column=0, columnspan=2, padx=10, pady=10)
 
-    def choose_input_file(self):
-        options = QFileDialog.Options()
-        fileName, _ = QFileDialog.getOpenFileName(self, "Wybierz plik wejściowy", "", "All Files (*)", options=options)
-        if fileName:
-            self.inputFileLineEdit.setText(fileName)
-
-    def choose_output_file(self):
-        options = QFileDialog.Options()
-        fileName, _ = QFileDialog.getSaveFileName(self, "Wybierz lokalizacje pliku", "", "All Files (*)", options=options)
-        if fileName:
-            self.outputFileLineEdit.setText(fileName)
-
-    def convert(self):
-        input_file = self.inputFileLineEdit.text()
-        output_file = self.outputFileLineEdit.text()
-        output_format = self.outputFormatComboBox.currentText()
-        threading.Thread(target=convert_file, args=(input_file, output_file, output_format)).start()
-
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    converter = ConverterApp()
-    converter.show()
-    sys.exit(app.exec_())
+# Uruchamianie pętli głównej aplikacji
+window.mainloop()
 
