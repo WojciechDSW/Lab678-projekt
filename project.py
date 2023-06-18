@@ -1,62 +1,53 @@
 import sys
-import threading
 import json
-import xml.etree.ElementTree as ET
 import yaml
-import xmljson
-import xmltodict
+import xml.etree.ElementTree as ET
+from xmljson import badgerfish as bf
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QFileDialog, QComboBox, QLabel, QLineEdit
+import threading
 
 
+def load_json(file_path):
+    with open(file_path, 'r') as file:
+        return json.load(file)
 
-def read_json(file_path):
-    with open(file_path, 'r') as f:
-        return json.load(f)
+def save_json(data, file_path):
+    with open(file_path, 'w') as file:
+        json.dump(data, file, indent=4)
 
-def write_json(data, file_path):
-    with open(file_path, 'w') as f:
-        json.dump(data, f)
+def load_yaml(file_path):
+    with open(file_path, 'r') as file:
+        return yaml.safe_load(file)
 
-def read_yaml(file_path):
-    with open(file_path, 'r') as f:
-        return yaml.safe_load(f)
+def save_yaml(data, file_path):
+    with open(file_path, 'w') as file:
+        yaml.dump(data, file)
 
-def write_yaml(data, file_path):
-    with open(file_path, 'w') as f:
-        yaml.safe_dump(data, f)
+def load_xml(file_path):
+    tree = ET.parse(file_path)
+    return bf.data(tree.getroot())
 
-def read_xml(file_path):
-    with open(file_path, 'r') as f:
-        return xmltodict.parse(f.read())
-
-def write_xml(data, file_path):
-    with open(file_path, 'w') as f:
-        f.write(xmltodict.unparse(data))
+def save_xml(data, file_path):
+    root = bf.etree(data)
+    tree = ET.ElementTree(root)
+    tree.write(file_path)
 
 def convert_file(input_file, output_file, output_format):
-    # Określenie formatu pliku wejściowego
+    data = None
     if input_file.endswith('.json'):
-        data = read_json(input_file)
+        data = load_json(input_file)
     elif input_file.endswith('.yaml') or input_file.endswith('.yml'):
-        data = read_yaml(input_file)
+        data = load_yaml(input_file)
     elif input_file.endswith('.xml'):
-        data = read_xml(input_file)
-    else:
-        print('Nieobsługiwany format pliku wejściowego.')
-        return
+        data = load_xml(input_file)
 
-    # Określenie formatu pliku wyjściowego
-    if output_format == 'json':
-        write_json(data, output_file)
-    elif output_format == 'yaml':
-        write_yaml(data, output_file)
-    elif output_format == 'xml':
-        write_xml(data, output_file)
-    else:
-        print('Nieobsługiwany format pliku wyjściowego.')
-        return
-
-
+    if data is not None:
+        if output_format == 'json':
+            save_json(data, output_file)
+        elif output_format == 'yaml':
+            save_yaml(data, output_file)
+        elif output_format == 'xml':
+            save_xml(data, output_file)
 
 class ConverterApp(QWidget):
     def __init__(self):
@@ -66,16 +57,13 @@ class ConverterApp(QWidget):
     def initUI(self):
         layout = QVBoxLayout()
 
-        self.inputFileLabel = QLabel('Plik wejściowy:')
         self.inputFileLineEdit = QLineEdit()
         self.inputFileButton = QPushButton('Wybierz plik wejściowy')
         self.inputFileButton.clicked.connect(self.choose_input_file)
 
-        self.outputFormatLabel = QLabel('Format wyjściowy:')
         self.outputFormatComboBox = QComboBox()
         self.outputFormatComboBox.addItems(['json', 'yaml', 'xml'])
 
-        self.outputFileLabel = QLabel('Plik wyjściowy:')
         self.outputFileLineEdit = QLineEdit()
         self.outputFileButton = QPushButton('Wybierz ścieżkę docelową pliku')
         self.outputFileButton.clicked.connect(self.choose_output_file)
@@ -83,12 +71,12 @@ class ConverterApp(QWidget):
         self.convertButton = QPushButton('Konwertuj')
         self.convertButton.clicked.connect(self.convert)
 
-        layout.addWidget(self.inputFileLabel)
+        layout.addWidget(QLabel('Plik wejściowy:'))
         layout.addWidget(self.inputFileLineEdit)
         layout.addWidget(self.inputFileButton)
-        layout.addWidget(self.outputFormatLabel)
+        layout.addWidget(QLabel('Format wyjściowy:'))
         layout.addWidget(self.outputFormatComboBox)
-        layout.addWidget(self.outputFileLabel)
+        layout.addWidget(QLabel('Plik wyjściowy:'))
         layout.addWidget(self.outputFileLineEdit)
         layout.addWidget(self.outputFileButton)
         layout.addWidget(self.convertButton)
@@ -103,20 +91,32 @@ class ConverterApp(QWidget):
 
     def choose_output_file(self):
         options = QFileDialog.Options()
-        fileName, _ = QFileDialog.getSaveFileName(self, "Wybierz lokalizacje pliku", "", "All Files (*)", options=options)
+        fileName, _ = QFileDialog.getSaveFileName(self, "Wybierz ścieżkę docelową", "", "All Files (*)", options=options)
         if fileName:
             self.outputFileLineEdit.setText(fileName)
 
     def convert(self):
+        threading.Thread(target=self.thread_convert).start()
+
+    def thread_convert(self):
         input_file = self.inputFileLineEdit.text()
         output_file = self.outputFileLineEdit.text()
         output_format = self.outputFormatComboBox.currentText()
-        threading.Thread(target=convert_file, args=(input_file, output_file, output_format)).start()
 
-if __name__ == "__main__":
+        if not input_file or not output_file:
+            print("Wybierz plik wejściowy i plik wyjściowy.")
+            return
+
+        convert_file(input_file, output_file, output_format)
+
+        print("Konwersja zakończona.")
+
+
+def main():
     app = QApplication(sys.argv)
-    converter = ConverterApp()
-    converter.show()
+    ex = ConverterApp()
+    ex.show()
     sys.exit(app.exec_())
 
-
+if __name__ == '__main__':
+    main()
