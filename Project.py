@@ -20,7 +20,7 @@ class ConverterApp(QWidget):
 
         self.outputFileLabel = QLabel('Plik wyjściowy:')
         self.outputFileLineEdit = QLineEdit()
-        self.outputFileButton = QPushButton('Wybierz plik wyjściowy')
+        self.outputFileButton = QPushButton('Wybierz ścieżkę docelową pliku')
         self.outputFileButton.clicked.connect(self.choose_output_file)
 
         self.convertButton = QPushButton('Konwertuj')
@@ -46,7 +46,7 @@ class ConverterApp(QWidget):
 
     def choose_output_file(self):
         options = QFileDialog.Options()
-        fileName, _ = QFileDialog.getSaveFileName(self, "Wybierz plik wyjściowy", "", "All Files (*)", options=options)
+        fileName, _ = QFileDialog.getSaveFileName(self, "Wybierz ścieżkę docelową", "", "All Files (*)", options=options)
         if fileName:
             self.outputFileLineEdit.setText(fileName)
 
